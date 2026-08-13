@@ -162,21 +162,39 @@ export class PlatformClient {
     // never reach the billing provider (docs/shadow-testing.md).
     if (this.opts.shadow) headers["x-ba-shadow"] = "1";
 
-    try {
-      const res = await fetch(url.toString(), {
-        method,
-        headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(15_000),
-      });
-      const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-      if (!res.ok) {
-        return { error: typeof json["error"] === "string" ? (json["error"] as string) : `HTTP ${res.status}` };
+    // Ride through platform deploy blips (verified live 2026-08-13: a ~10s container
+    // restart 502'd identify and 500'd the plans page). Connection failures and 502/503
+    // mean the backend never processed the request, so retrying is safe for EVERY
+    // method, subscribe included. A TIMEOUT may mean the server did process it and the
+    // response was lost — never blind-retry a write on timeout.
+    const RETRIES = 2;
+    const BACKOFF_MS = [400, 1200];
+    let lastError: PlatformError = { error: "network: unknown" };
+    for (let attempt = 0; attempt <= RETRIES; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1] ?? 1200));
+      try {
+        const res = await fetch(url.toString(), {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (res.status === 502 || res.status === 503) {
+          lastError = { error: `HTTP ${res.status}` };
+          continue;
+        }
+        const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        if (!res.ok) {
+          return { error: typeof json["error"] === "string" ? (json["error"] as string) : `HTTP ${res.status}` };
+        }
+        return json as T;
+      } catch (err) {
+        lastError = { error: `network: ${String(err)}` };
+        const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+        if (isTimeout && method !== "GET") return lastError;
       }
-      return json as T;
-    } catch (err) {
-      return { error: `network: ${String(err)}` };
     }
+    return lastError;
   }
 
   /** In shadow mode, never let a platform failure surface into the host app. */

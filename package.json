@@ -1,6 +1,6 @@
 {
   "name": "@betterapps/platform-client",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Drop-in client for the BA platform (Mantle-compatible API surface)",
   "repository": {
     "type": "git",

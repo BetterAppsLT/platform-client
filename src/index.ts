@@ -118,6 +118,49 @@ export interface SubscribeResult {
   confirmationUrl: string | null;
 }
 
+/** One rung of the app-bundle ladder: at least `minApps` of our apps → `percent` off all of them. */
+export interface BundleTier {
+  minApps: number;
+  percent: number;
+}
+
+export interface BundleApp {
+  id: string;
+  name: string;
+  slug: string;
+  /** Installed in this shop right now. */
+  installed: boolean;
+  /** Counts toward the ladder (usually: on a paid plan). */
+  qualifies: boolean;
+  /** The app making the call. */
+  current: boolean;
+  /** App Store listing for the "Install" button; null = don't render the button. */
+  installUrl: string | null;
+  /** Admin deep link to the app in this shop, for "Open". */
+  adminUrl: string;
+}
+
+/**
+ * App-bundle status for one shop (GET /v1/bundle, ba-dashboard docs/bundles.md). Render the
+ * banner only when `enabled && eligible`; the percent and prices are the platform's, never
+ * recomputed in the app.
+ */
+export interface BundleStatus {
+  /** Program switched on in the dashboard. */
+  enabled: boolean;
+  /** This shop can get the bundle. False = gated/excluded; the reason is internal. */
+  eligible: boolean;
+  title: string | null;
+  subtitle: string | null;
+  tiers: BundleTier[];
+  qualifyingAppCount: number;
+  /** % currently taken off every subscription this shop has with us (0 = none). */
+  currentPercent: number;
+  /** Next tier to unlock; null on the top tier, or when disabled/ineligible. */
+  nextTier: BundleTier | null;
+  apps: BundleApp[];
+}
+
 export * from "./shadow.js";
 
 const DEFAULT_API_URL = "https://platform.betterapps.pro";
@@ -213,6 +256,20 @@ export class PlatformClient {
     myshopifyDomain?: string;
   }): Promise<Customer | PlatformError> {
     return this.request<Customer>("GET", "/v1/customer", undefined, {
+      customerId: params?.customerId,
+      myshopifyDomain: params?.myshopifyDomain,
+    });
+  }
+
+  /**
+   * App-bundle ladder + where this shop stands (GET /v1/bundle): drives the in-app
+   * "install our other app, get X% off both" banner. Additive, not part of the Mantle surface.
+   */
+  async getBundle(params?: {
+    customerId?: string;
+    myshopifyDomain?: string;
+  }): Promise<BundleStatus | PlatformError> {
+    return this.request<BundleStatus>("GET", "/v1/bundle", undefined, {
       customerId: params?.customerId,
       myshopifyDomain: params?.myshopifyDomain,
     });

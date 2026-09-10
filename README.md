@@ -19,11 +19,15 @@ Additions over Mantle's client:
   subscribe that never confirms stays `pending` forever.
 - `shadow: true` constructor option — every method runs fire-and-safe for dual-write
   shadow testing while Mantle stays the live source of truth.
+- `getBundle({ myshopifyDomain })` (v0.3.0) — app-bundle ladder + where this shop stands
+  (`GET /v1/bundle`), for the in-app "install our other app, get X% off both" banner. Show
+  the banner only when `enabled && eligible`; each app row carries `installUrl` / `adminUrl`.
+  Integration guide: ba-dashboard `docs/bundles-app-integration.md`.
 
 ## Install
 
 ```bash
-npm install github:BetterAppsLT/platform-client#v0.2.0
+npm install github:BetterAppsLT/platform-client#v0.3.0
 ```
 
 `prepare` builds `dist/` on install; no registry or token needed.

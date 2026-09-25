@@ -84,6 +84,19 @@ export interface Customer {
   uninstalledAt: string | null;
   customFields: Record<string, unknown>;
   tags: string[];
+  /**
+   * A flow-minted offer (activation / winback email) waiting for this customer (v0.4.0).
+   * `subscribe` applies it automatically when no `discountCode` is passed, so the plan
+   * picker should show it BEFORE the click: the discounted price, "X% off for N months",
+   * and the code prefilled. Null when none is pending. Platform-only; Mantle never had it.
+   */
+  pendingOffer?: {
+    code: string;
+    percent: number;
+    cycles: number | null;
+    expiresAt: string;
+    discount: { id: string; code: string; kind: string; value: number; durationCycles: number | null };
+  } | null;
   plans: CustomerPlan[];
   subscription: {
     id: string;

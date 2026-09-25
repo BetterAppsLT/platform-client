@@ -19,6 +19,7 @@ Additions over Mantle's client:
   subscribe that never confirms stays `pending` forever.
 - `shadow: true` constructor option — every method runs fire-and-safe for dual-write
   shadow testing while Mantle stays the live source of truth.
+- `customer.pendingOffer` (v0.4.0): the flow-minted offer `subscribe` will auto-apply; render it in the plan picker (discounted price + code prefilled)
 - `getBundle({ myshopifyDomain })` (v0.3.0) — app-bundle ladder + where this shop stands
   (`GET /v1/bundle`), for the in-app "install our other app, get X% off both" banner. Show
   the banner only when `enabled && eligible`; each app row carries `installUrl` / `adminUrl`.
@@ -27,7 +28,7 @@ Additions over Mantle's client:
 ## Install
 
 ```bash
-npm install github:BetterAppsLT/platform-client#v0.3.0
+npm install github:BetterAppsLT/platform-client#v0.4.0
 ```
 
 `prepare` builds `dist/` on install; no registry or token needed.
